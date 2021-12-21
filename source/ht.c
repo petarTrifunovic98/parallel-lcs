@@ -25,18 +25,26 @@ ht* ht_create(hash_func h_func, hash_func_secondary h_func_secondary, uint32_t h
     created_ht->capacity = h_capacity;
 }
 
-ht_entry* ht_get_entry_and_prev(ht* h_table, uint32_t h_key, ht_entry* h_prev, uint32_t* h_hash)
+ht_entry* ht_get_entry_and_prev(ht* h_table, uint32_t h_key, ht_entry** h_prev, uint32_t* h_hash)
 {
     uint32_t hash = h_table->h_func(h_key, h_table->capacity_pow);
+    uint32_t original_hash = hash;
     ht_entry* entry = h_table->entries[hash];
-    h_prev = NULL;
+    *h_prev = NULL;
     int i = 1;
+
 
     while (entry->status != EMPTY && entry->key != h_key)
     {
-        h_prev = entry;
+        *h_prev = entry;
         hash = h_table->h_func_secondary(hash, i, h_table->capacity) & (h_table->capacity - 1); //capacity must be 2^n
         entry = h_table->entries[hash];
+        i++;
+        if (hash == original_hash) 
+        {
+            printf("Bad secondary hashing function!\n");
+            return NULL;
+        }
     }
     *h_hash = hash;
     return entry;
@@ -46,18 +54,40 @@ void ht_insert(ht* h_table, uint32_t h_key, int h_value)
 {
     //add 'table full' check
     uint32_t hash;
-    ht_entry* prev;
+    ht_entry** prev = (ht_entry**)malloc(sizeof(ht_entry*));
     ht_entry* entry = ht_get_entry_and_prev(h_table, h_key, prev, &hash);
-    if (entry->key == HT_EMPTY_KEY)
+    if (entry != NULL && entry->key == HT_EMPTY_KEY)
     {
         if(__sync_val_compare_and_swap(&entry->key, HT_EMPTY_KEY, h_key) != HT_EMPTY_KEY)
             return ht_insert(h_table, h_key, h_value);
-        if(prev != NULL)
-            prev->next = hash;
+        if(*prev != NULL)
+        {
+            (*prev)->next = hash;
+        }
         entry->next = -1;
         entry->status = OCCUPIED;
         entry->value = h_value;
     }
+    else if (entry == NULL) 
+    {
+        printf("Value %d with key %d could not be inserted due to bad secondary hash!\n", h_value, h_key);
+    }
+    else if (entry->key == h_key) 
+    {
+        printf("Value %d with key %d colud not be inserted because a value with the same key already exists!\n", h_value, h_key);
+    }
+}
+
+void ht_print_state(ht* h_table)
+{
+    for (int i = 0; i < h_table->capacity; i++)
+    {
+        printf("%d: ", i);
+        if (h_table->entries[i]->status == OCCUPIED)
+            printf("key=%d, value=%d", h_table->entries[i]->key, h_table->entries[i]->value);
+        printf("\n");
+    }
+    printf("\n");
 }
 
 
@@ -82,5 +112,12 @@ uint32_t _secondary_hash_function(uint32_t h_key, int iter, uint32_t capacity)
 
 void main()
 {
-    
+    ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 6);
+    for (int i=0; i<64; i++)
+    {
+        ht_insert(table, rand() % 2048, rand() % 64);
+        //printf("Inserted!\n");
+    }
+    ht_insert(table, 24u, 15);
+    ht_print_state(table);
 }
