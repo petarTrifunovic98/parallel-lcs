@@ -34,4 +34,5 @@ typedef struct
 ht* ht_create(hash_func h_func, hash_func_secondary h_func_secondary, uint32_t h_capacity_pow);
 ht_entry* ht_get_entry_and_prev(ht* h_table, uint64_t h_key, ht_entry** h_prev, uint64_t* h_hash);
 void ht_insert(ht* h_table, uint64_t h_key, int h_value);
+ht_entry* ht_lookup(ht* h_table, uint64_t h_key);
 void ht_print_state(ht* h_table);

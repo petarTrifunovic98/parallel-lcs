@@ -38,7 +38,7 @@ ht_entry* ht_get_entry_and_prev(ht* h_table, uint64_t h_key, ht_entry** h_prev, 
     while (entry->status != EMPTY && entry->key != h_key)
     {
         *h_prev = entry;
-        hash = h_table->h_func_secondary(hash, i, h_table->capacity) & (h_table->capacity - 1); //capacity must be 2^n
+        hash = h_table->h_func_secondary(hash, i, h_table->capacity)/* & (h_table->capacity - 1)*/; //capacity must be 2^n
         entry = h_table->entries[hash];
         i++;
         if (hash == original_hash) 
@@ -81,6 +81,37 @@ void ht_insert(ht* h_table, uint64_t h_key, int h_value)
     }
 }
 
+ht_entry* ht_lookup(ht* h_table, uint64_t h_key)
+{
+    uint64_t hash = h_table->h_func(h_key, h_table->capacity_pow);
+    uint64_t original_hash = hash;
+    ht_entry* entry = h_table->entries[hash];
+    //printf("Started search!\n");
+
+    if (entry->status != EMPTY)
+    {
+        int i = 1;
+        while (i < 2*h_table->capacity && entry->key != h_key)
+        {
+            hash = h_table->h_func_secondary(hash, i, h_table->capacity);
+            entry = h_table->entries[hash];
+            i++;
+        }
+        if (i >= 2*h_table->capacity)
+        {
+            printf("There is no entry with the specified key! (capacity)\n");
+            return NULL;
+        }
+    }
+    else
+    {
+        printf("There is no entry with the specified key!\n");
+        return NULL;
+    }
+    //printf("Ended search!\n");
+    return entry;
+}
+
 void ht_print_state(ht* h_table)
 {
     for (int i = 0; i < h_table->capacity; i++)
@@ -115,13 +146,21 @@ uint32_t _secondary_hash_function(uint64_t h_key, int iter, uint64_t capacity)
 
 void main()
 {
-    ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 7);
+    ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 6);
     //printf("Created\n");
     for (int i=0; i<63; i++)
     {
         ht_insert(table, rand() % 2048, rand() % 64);
         //printf("Inserted!\n");
     }
-    ht_insert(table, 24u, 15);
+    ht_insert(table, 24, 15);
     ht_print_state(table);
+
+    ht_entry* en = ht_lookup(table, 97);
+    printf("Key 97, value: %d\n", en->value);
+    en = ht_lookup(table, 1177);
+    printf("Key 1177, value: %d\n", en->value);
+    en = ht_lookup(table, 24);
+    printf("Key 24, value: %d\n", en->value);
+    en = ht_lookup(table, 200);
 }
