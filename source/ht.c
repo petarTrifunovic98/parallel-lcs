@@ -23,6 +23,7 @@ ht* ht_create(hash_func h_func, hash_func_secondary h_func_secondary, uint32_t h
     }
     created_ht->capacity_pow = h_capacity_pow;
     created_ht->capacity = h_capacity;
+    return created_ht;
 }
 
 ht_entry* ht_get_entry_and_prev(ht* h_table, uint64_t h_key, ht_entry** h_prev, uint64_t* h_hash)
@@ -43,7 +44,7 @@ ht_entry* ht_get_entry_and_prev(ht* h_table, uint64_t h_key, ht_entry** h_prev, 
         i++;
         if (hash == original_hash) 
         {
-            printf("Bad secondary hashing function!\n");
+            //printf("Bad secondary hashing function!\n");
             return NULL;
         }
     }
@@ -73,11 +74,11 @@ void ht_insert(ht* h_table, uint64_t h_key, int h_value)
     }
     else if (entry == NULL) 
     {
-        printf("Value %d with key %ld could not be inserted due to bad secondary hash!\n", h_value, h_key);
+        //printf("Value %d with key %ld could not be inserted due to bad secondary hash!\n", h_value, h_key);
     }
     else if (entry->key == h_key) 
     {
-        printf("Value %d with key %ld colud not be inserted because a value with the same key already exists!\n", h_value, h_key);
+        //printf("Value %d with key %ld colud not be inserted because a value with the same key already exists!\n", h_value, h_key);
     }
 }
 
@@ -99,13 +100,13 @@ ht_entry* ht_lookup(ht* h_table, uint64_t h_key)
         }
         if (i >= 2*h_table->capacity)
         {
-            printf("There is no entry with the specified key! (capacity)\n");
+            //printf("There is no entry with the specified key! (capacity)\n");
             return NULL;
         }
     }
     else
     {
-        printf("There is no entry with the specified key!\n");
+        //printf("There is no entry with the specified key!\n");
         return NULL;
     }
     //printf("Ended search!\n");
@@ -126,41 +127,41 @@ void ht_print_state(ht* h_table)
 
 
 /* -------Private methods-------- */
-void _update_entry(ht_entry* entry, uint64_t h_key, int h_value, int next)
-{
-    entry->key = h_key;
-    entry->value = h_value;
-    entry->next = next;
-}
+// void _update_entry(ht_entry* entry, uint64_t h_key, int h_value, int next)
+// {
+//     entry->key = h_key;
+//     entry->value = h_value;
+//     entry->next = next;
+// }
 
-uint32_t _primary_hash_function_fib(uint64_t h_key, uint32_t pow_value) //insert reference "hash func for int"
-{
-    const uint64_t fib_const = 11400714819323198485;
-    return (h_key * fib_const) >> (DOUBLE_WORD_BITSIZE - pow_value);
-}
+// uint32_t _primary_hash_function_fib(uint64_t h_key, uint32_t pow_value) //insert reference "hash func for int"
+// {
+//     const uint64_t fib_const = 11400714819323198485;
+//     return (h_key * fib_const) >> (DOUBLE_WORD_BITSIZE - pow_value);
+// }
 
-uint32_t _secondary_hash_function(uint64_t h_key, int iter, uint64_t capacity)
-{
-    return (h_key + iter * iter) & (capacity - 1);
-}
+// uint32_t _secondary_hash_function(uint64_t h_key, int iter, uint64_t capacity)
+// {
+//     return (h_key + iter * iter) & (capacity - 1);
+// }
 
-void main()
-{
-    ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 6);
-    //printf("Created\n");
-    for (int i=0; i<63; i++)
-    {
-        ht_insert(table, rand() % 2048, rand() % 64);
-        //printf("Inserted!\n");
-    }
-    ht_insert(table, 24, 15);
-    ht_print_state(table);
+// void main()
+// {
+//     ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 6);
+//     //printf("Created\n");
+//     for (int i=0; i<63; i++)
+//     {
+//         ht_insert(table, rand() % 2048, rand() % 64);
+//         //printf("Inserted!\n");
+//     }
+//     ht_insert(table, 24, 15);
+//     ht_print_state(table);
 
-    ht_entry* en = ht_lookup(table, 97);
-    printf("Key 97, value: %d\n", en->value);
-    en = ht_lookup(table, 1177);
-    printf("Key 1177, value: %d\n", en->value);
-    en = ht_lookup(table, 24);
-    printf("Key 24, value: %d\n", en->value);
-    en = ht_lookup(table, 200);
-}
+//     ht_entry* en = ht_lookup(table, 97);
+//     printf("Key 97, value: %d\n", en->value);
+//     en = ht_lookup(table, 1177);
+//     printf("Key 1177, value: %d\n", en->value);
+//     en = ht_lookup(table, 24);
+//     printf("Key 24, value: %d\n", en->value);
+//     en = ht_lookup(table, 200);
+// }
