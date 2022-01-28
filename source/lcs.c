@@ -4,6 +4,7 @@
 #include <stdatomic.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 
 #define WORD_BITSIZE __CHAR_BIT__ * sizeof(uint32_t)
 #define DOUBLE_WORD_BITSIZE __CHAR_BIT__ * sizeof(uint64_t)
@@ -16,12 +17,15 @@ int max(int a, int b)
 
 int findLcs(char* arrA, char* arrB, uint32_t lenArrA, uint32_t lenArrB, ht* h_table)
 {
-    // if(__sync_val_compare_and_swap(&test, test, test) == 1)
-    // {
-    //     int threadNum = omp_get_thread_num();
-    //     printf("%d: Exiting with lenA: %d, lenB: %d\n", threadNum, lenArrA, lenArrB);
-    //     return 0;
-    // }
+    #ifdef TEST_EXIT_CONDITION
+    if(__sync_val_compare_and_swap(&test, test, test) == 1)
+    {
+        int threadNum = omp_get_thread_num();
+        //printf("%d: Exiting with lenA: %d, lenB: %d\n", threadNum, lenArrA, lenArrB);
+        return 0;
+    }
+    #endif
+
     if (lenArrA == 0 || lenArrB == 0)
     {
         //printf("Executing for lengths %d and %d.\n", lenArrA, lenArrB);
@@ -48,6 +52,7 @@ int findLcs(char* arrA, char* arrB, uint32_t lenArrA, uint32_t lenArrB, ht* h_ta
     else
     {
         int decider = rand();
+        //int decider = 2;
         int value;
         if(decider % 2 == 0)
             value = max(findLcs(arrA, arrB, lenArrA - 1, lenArrB, h_table), findLcs(arrA, arrB, lenArrA, lenArrB - 1, h_table));
@@ -69,47 +74,60 @@ uint32_t _secondary_hash_function(uint64_t h_key, int iter, uint64_t capacity)
     return (h_key + iter * iter) & (capacity - 1);
 }
 
-void main()
+void main(int argc, char* argv[])
 {
+    if (argc < 2)
+    {
+        printf("You have to specify the type of execution!\n"); 
+        printf("Example (if your executable is named \"lcs\"):\n   ./lcs parallel - for parallel execution\n");
+        printf("   ./lcs _any_string_ - for sequential execution\n");
+    }
     srand(time(0));
-    char* arrA = "asjwqepoizcnwrijljqwejlapzzcowqwejklaadqwekpzxcjklqnmqwejfkwpqomqopeorpakemngieoqweasdads \
-        asdqweqwkjlqewjkqlwejkqweipocajlkasdnweqpoiqwekljadnasdjlkcznasdjlkqwekn";
-    char* arrB = "sdfjklweropcnmcxvlksdpqksjapiasdnadsklqwenmzcxopqiwepoqiwmbjemvksqaoqwmewnqladqwejoqejwkj \
-        asdjkqwehncxbmnefwjlkkgrbnfewlikewjkqkljwqenkfdsnmsdflkdsan,anmqewjlkqewkl;dsmncvxmnasdqweioqwjksanbmxzc";
-    uint32_t lenArrA = 161;
-    uint32_t lenArrB = 193;
+    char* arrA = "asjwqepoizcnwrijljqwejlapzzcowqwejklaadqwekpzxcjklqnmqwejfkwpqomqopeorpakemngieoqweasdadsasdqweqwkjlqewjkqlwejkqweipocajlkasdnweqpoiqwekljadnasdjlkcznasdjlkqweknwqzpvoei";
+    char* arrB = "sdfjklweropcnmcxvlksdpqksjapiasdnadsklqwenmzcxopqiwepoqiwmbjemvksqaoqwmewnqladqwejoqejwkjasdjkqwehncxbmnefwjlkkgrbnfewlikewjkqkljwqenkfdsnmsdflkdsan,anmqewjlkqewkl;dsmncvxmnasdqweioqwjksanbmxzcvqtqo";
+    uint32_t lenArrA = 169;
+    uint32_t lenArrB = 198;
 
     ht* table1 = ht_create(_primary_hash_function_fib, _secondary_hash_function, 16);
     ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 16);
 
 
-    double start = omp_get_wtime();
-    int lcsLen1 = findLcs(arrA, arrB, lenArrA, lenArrB, table1);
-    double stop = omp_get_wtime();
-    printf("Sequential execution time: %lf\n", stop-start);
-    printf("\nLCS length: %d\n", lcsLen1);
-    //printf("%d\n", omp_get_cancellation());
+    double start;
+    double stop;
     test = 0;
-    int numThreads;
-    start = omp_get_wtime();
-    #pragma omp parallel num_threads(6)
+    if(strcmp(argv[1], "parallel"))
     {
-        #pragma omp single
+        start = omp_get_wtime();
+        int lcsLen1 = findLcs(arrA, arrB, lenArrA, lenArrB, table1);
+        stop = omp_get_wtime();
+        printf("Sequential execution time: %lf\n", stop-start);
+        printf("\nLCS length: %d\n", lcsLen1);
+    }   
+    else
+    {
+        int numThreads;
+        start = omp_get_wtime();
+        #pragma omp parallel num_threads(6)
         {
-            numThreads = omp_get_num_threads();
-            for (int i = 0; i < numThreads; i++)
+            #pragma omp single
             {
-                #pragma omp task
+                numThreads = omp_get_num_threads();
+                for (int i = 0; i < numThreads; i++)
                 {
-                    int lcsLen = findLcs(arrA, arrB, lenArrA, lenArrB, table);
-                    __sync_val_compare_and_swap(&test, 0, 1);
-                    double currentStop = omp_get_wtime();
-                    printf("\n%d: LCS length: %d calculated after %lf\n", omp_get_thread_num(), lcsLen, currentStop - start);
-                    fflush(stdout);
+                    #pragma omp task
+                    {
+                        int lcsLen = findLcs(arrA, arrB, lenArrA, lenArrB, table);
+                        #ifdef TEST_EXIT_CONDITION
+                        __sync_val_compare_and_swap(&test, 0, 1);
+                        #endif
+                        double currentStop = omp_get_wtime();
+                        printf("\n%d: LCS length: %d calculated after %lf\n", omp_get_thread_num(), lcsLen, currentStop - start);
+                        fflush(stdout);
+                    }
                 }
             }
         }
+        stop = omp_get_wtime();
+        printf("Parallel execution time: %lf\n", stop-start);
     }
-    stop = omp_get_wtime();
-    printf("Parallel execution time: %lf\n", stop-start);
 }
