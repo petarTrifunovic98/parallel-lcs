@@ -8,6 +8,7 @@
 
 #define WORD_BITSIZE __CHAR_BIT__ * sizeof(uint32_t)
 #define DOUBLE_WORD_BITSIZE __CHAR_BIT__ * sizeof(uint64_t)
+#define MAX_ARRAY_SIZE 1024
 int test;
 
 int max(int a, int b)
@@ -74,22 +75,80 @@ uint32_t _secondary_hash_function(uint64_t h_key, int iter, uint64_t capacity)
     return (h_key + iter * iter) & (capacity - 1);
 }
 
+int _read_lcs_args_from_file(char* filename, uint32_t* htPow, uint32_t* lenArrA, uint32_t* lenArrB, char** arrA, char** arrB)
+{
+    FILE* file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        printf("Error openning file %s!\n", filename);
+        return 1;
+    }
+
+    int intMaxChars = 4;
+    char intBuff[intMaxChars];
+    char strBuffA[MAX_ARRAY_SIZE];
+    char strBuffB[MAX_ARRAY_SIZE];
+
+    fgets(intBuff, intMaxChars, file);
+    *htPow = atoi(intBuff);
+
+    fgets(strBuffA, MAX_ARRAY_SIZE, file);
+    *lenArrA = strlen(strBuffA);
+    if(strBuffA[(*lenArrA) - 1] == '\n')
+    {
+        strBuffA[(*lenArrA) - 1] = '\0';
+        *lenArrA = (*lenArrA) - 1;
+    }
+    *arrA = (char*)malloc(((*lenArrA) + 1) * sizeof(char));
+    for(int i = 0; i < (*lenArrA) + 1; i++)
+        (*arrA)[i] = strBuffA[i];
+
+    fgets(strBuffB, MAX_ARRAY_SIZE, file);
+    *lenArrB = strlen(strBuffB);
+    if(strBuffB[(*lenArrB) - 1] == '\n')
+    {
+        strBuffB[(*lenArrB) - 1] = '\0';
+        *lenArrB = (*lenArrB) - 1;
+    }
+    *arrB = (char*)malloc(((*lenArrB) + 1) * sizeof(char));
+    for(int i = 0; i < (*lenArrB) + 1; i++)
+        (*arrB)[i] = strBuffB[i];
+
+    return 0;
+}
+
 void main(int argc, char* argv[])
 {
-    if (argc < 2)
+    if (argc != 4)
     {
-        printf("You have to specify the type of execution!\n"); 
-        printf("Example (if your executable is named \"lcs\"):\n   ./lcs parallel - for parallel execution\n");
-        printf("   ./lcs _any_string_ - for sequential execution\n");
+        printf("You have to specify the type of execution, path to the test file, and desired number of threads!\n"); 
+        printf("Example (if your executable is named \"lcs\"):\n   ./lcs parallel ../test_examples/test1 6 - for parallel execution with 6 threads\n");
+        printf("   ./lcs _any_string_ ../test_examples/test1 6 - for sequential execution (only the path argument has an effect)\n");
+        return;
     }
-    srand(time(0));
-    char* arrA = "asjwqepoizcnwrijljqwejlapzzcowqwejklaadqwekpzxcjklqnmqwejfkwpqomqopeorpakemngieoqweasdadsasdqweqwkjlqewjkqlwejkqweipocajlkasdnweqpoiqwekljadnasdjlkcznasdjlkqweknwqzpvoei";
-    char* arrB = "sdfjklweropcnmcxvlksdpqksjapiasdnadsklqwenmzcxopqiwepoqiwmbjemvksqaoqwmewnqladqwejoqejwkjasdjkqwehncxbmnefwjlkkgrbnfewlikewjkqkljwqenkfdsnmsdflkdsan,anmqewjlkqewkl;dsmncvxmnasdqweioqwjksanbmxzcvqtqo";
-    uint32_t lenArrA = 169;
-    uint32_t lenArrB = 198;
 
-    ht* table1 = ht_create(_primary_hash_function_fib, _secondary_hash_function, 16);
-    ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 16);
+    int desiredNumOfThreads = atoi(argv[3]);
+    if(desiredNumOfThreads <= 0)
+    {
+        printf("Number of threads has to be an integer greater than 0!\n");
+        return;
+    }
+
+    srand(time(0));
+    char* arrA;
+    char* arrB;
+    uint32_t lenArrA;
+    uint32_t lenArrB;
+    uint32_t htPow;
+
+    if(_read_lcs_args_from_file(argv[2], &htPow, &lenArrA, &lenArrB, &arrA, &arrB) > 0)
+        return;
+    printf("Table size: 2^%d\nArray A length: %d\nArray B length: %d\nArray A: %s\nArray B: %s\n\n", htPow, lenArrA, lenArrB, arrA, arrB);
+
+
+    ht* table1 = ht_create(_primary_hash_function_fib, _secondary_hash_function, htPow);
+    ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, htPow);
+    ht* table2 = ht_create(_primary_hash_function_fib, _secondary_hash_function, htPow);
 
 
     double start;
@@ -100,6 +159,7 @@ void main(int argc, char* argv[])
         start = omp_get_wtime();
         int lcsLen1 = findLcs(arrA, arrB, lenArrA, lenArrB, table1);
         stop = omp_get_wtime();
+
         printf("Sequential execution time: %lf\n", stop-start);
         printf("\nLCS length: %d\n", lcsLen1);
     }   
@@ -107,11 +167,13 @@ void main(int argc, char* argv[])
     {
         int numThreads;
         start = omp_get_wtime();
-        #pragma omp parallel num_threads(6)
+        #pragma omp parallel num_threads(desiredNumOfThreads)
         {
             #pragma omp single
             {
                 numThreads = omp_get_num_threads();
+                printf("Number of threads: %d\n", numThreads);
+                fflush(stdout);
                 for (int i = 0; i < numThreads; i++)
                 {
                     #pragma omp task
@@ -130,4 +192,7 @@ void main(int argc, char* argv[])
         stop = omp_get_wtime();
         printf("Parallel execution time: %lf\n", stop-start);
     }
+
+    free(arrA);
+    free(arrB);
 }
