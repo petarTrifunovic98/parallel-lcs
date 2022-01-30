@@ -13,7 +13,7 @@ ht* ht_create(hash_func h_func, hash_func_secondary h_func_secondary, uint32_t h
     ht* created_ht = (ht*)malloc(sizeof(ht));
     created_ht->h_func = h_func;
     created_ht->h_func_secondary = h_func_secondary;
-    uint64_t h_capacity = 1u << h_capacity_pow; //add overflow check
+    uint64_t h_capacity = 1u << h_capacity_pow;
     created_ht->entries = (ht_entry**)malloc(/*1.2 **/ h_capacity * sizeof(ht_entry*));
     for(int i = 0; i < h_capacity; i++)
     {
@@ -39,7 +39,7 @@ ht_entry* ht_get_entry_and_prev(ht* h_table, uint64_t h_key, ht_entry** h_prev, 
     while (entry->status != EMPTY && entry->key != h_key)
     {
         *h_prev = entry;
-        hash = h_table->h_func_secondary(hash, i, h_table->capacity)/* & (h_table->capacity - 1)*/; //capacity must be 2^n
+        hash = h_table->h_func_secondary(hash, i, h_table->capacity); //capacity must be 2^n
         entry = h_table->entries[hash];
         i++;
         if (hash == original_hash) 
@@ -54,7 +54,6 @@ ht_entry* ht_get_entry_and_prev(ht* h_table, uint64_t h_key, ht_entry** h_prev, 
 
 void ht_insert(ht* h_table, uint64_t h_key, int h_value)
 {
-    //add 'table full' check
     uint64_t hash;
     ht_entry** prev = (ht_entry**)malloc(sizeof(ht_entry*));
     ht_entry* entry = ht_get_entry_and_prev(h_table, h_key, prev, &hash);
