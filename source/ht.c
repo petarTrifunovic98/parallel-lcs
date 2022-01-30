@@ -113,6 +113,16 @@ ht_entry* ht_lookup(ht* h_table, uint64_t h_key)
     return entry;
 }
 
+void ht_free(ht* h_table)
+{
+    for(int i = 0; i < h_table->capacity; i++)
+    {
+        free(h_table->entries[i]);
+    }
+    free(h_table->entries);
+    free(h_table);
+}
+
 void ht_print_state(ht* h_table)
 {
     for (int i = 0; i < h_table->capacity; i++)
@@ -145,23 +155,3 @@ void ht_print_state(ht* h_table)
 //     return (h_key + iter * iter) & (capacity - 1);
 // }
 
-// void main()
-// {
-//     ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, 6);
-//     //printf("Created\n");
-//     for (int i=0; i<63; i++)
-//     {
-//         ht_insert(table, rand() % 2048, rand() % 64);
-//         //printf("Inserted!\n");
-//     }
-//     ht_insert(table, 24, 15);
-//     ht_print_state(table);
-
-//     ht_entry* en = ht_lookup(table, 97);
-//     printf("Key 97, value: %d\n", en->value);
-//     en = ht_lookup(table, 1177);
-//     printf("Key 1177, value: %d\n", en->value);
-//     en = ht_lookup(table, 24);
-//     printf("Key 24, value: %d\n", en->value);
-//     en = ht_lookup(table, 200);
-// }

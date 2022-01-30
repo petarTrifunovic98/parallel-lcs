@@ -147,7 +147,6 @@ void main(int argc, char* argv[])
 
 
     ht* table1 = ht_create(_primary_hash_function_fib, _secondary_hash_function, htPow);
-    ht* table = ht_create(_primary_hash_function_fib, _secondary_hash_function, htPow);
     ht* table2 = ht_create(_primary_hash_function_fib, _secondary_hash_function, htPow);
 
 
@@ -178,7 +177,7 @@ void main(int argc, char* argv[])
                 {
                     #pragma omp task
                     {
-                        int lcsLen = findLcs(arrA, arrB, lenArrA, lenArrB, table);
+                        int lcsLen = findLcs(arrA, arrB, lenArrA, lenArrB, table2);
                         #ifdef TEST_EXIT_CONDITION
                         __sync_val_compare_and_swap(&test, 0, 1);
                         #endif
@@ -195,4 +194,6 @@ void main(int argc, char* argv[])
 
     free(arrA);
     free(arrB);
+    ht_free(table1);
+    ht_free(table2);
 }
