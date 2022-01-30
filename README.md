@@ -25,8 +25,9 @@ The file with the arguments must contain three arguments, all writen in separate
 3. The second array
 
 For example, if the content of the file is:
-4
-ajweql
-adsjdakl
+
+| 4
+| ajweql
+| adsjdakl
 
 then the program will use a hastable with 2^4 entries in order to calculate the length of the longest common subsequence of arrays "ajweql" and "adsjdakl". The file must not have any leading white lines, but can have trailing ones.
