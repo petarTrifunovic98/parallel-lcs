@@ -23,6 +23,7 @@ The file with the arguments must contain three arguments, all writen in separate
 1. The power to which number two will be raised in order to calculate the hashtable size
 2. The first array
 3. The second array
+
 For example, if the content of the file is:
 4
 ajweql
