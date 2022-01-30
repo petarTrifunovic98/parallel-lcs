@@ -26,19 +26,8 @@ The file with the arguments must contain three arguments, all writen in separate
 
 For example, if the content of the file is:
 
-| Line blocks are useful for addresses,
-| verse, and adornment-free lists.
-|
-| Each new line begins with a
-| vertical bar ("|").
-|     Line breaks and initial indents
-|     are preserved.
-| Continuation lines are wrapped
-  portions of long lines; they begin
-  with spaces in place of vertical bars.
-
-| 4
-| ajweql
-| adsjdakl
+4  
+ajweql  
+adsjdakl  
 
 then the program will use a hastable with 2^4 entries in order to calculate the length of the longest common subsequence of arrays "ajweql" and "adsjdakl". The file must not have any leading white lines, but can have trailing ones.
