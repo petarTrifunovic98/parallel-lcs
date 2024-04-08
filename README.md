@@ -3,16 +3,16 @@ A dynamic programming parallel implementation of the LCS problem
 
 # How to compile using gcc
 - set the current working directory to ./source
-- "gcc ht.c lcs.c -o name_of_the_executable -fopenmp"
+- `gcc ht.c lcs.c -o name_of_the_executable -fopenmp`
 
 ## TEST_EXIT_CONDITION macro
 If you compile the program without defining the TEST_EXIT_CONDITION macro, the recursive calls to the findLcs function will not check the global "test" variable, which indicates that one of the threads has already found the solution and the other should stop their execution. Defining the macro, however, will not always lead to a significant decrease in the execution time, because, when one thread finishes, the hashtable used for memoization will have the solution to most of the subproblems stored, if not all of them. Other threads will just read the solutions and finish their job not much after the first one. This macro only affects the parallel version of the program.
 
 ### How to define the macro while compiling
-- "gcc ht.c lcs.c -o name_of_the_executable -fopenmp -D TEST_EXIT_CONDITION"
+- `gcc ht.c lcs.c -o name_of_the_executable -fopenmp -D TEST_EXIT_CONDITION`
 
 # Running the program
-- ./name_of_the_executable _option1_ _option2_ _option3_
+- `./name_of_the_executable _option1_ _option2_ _option3_`
 Options are:
 1. _option1_ - "parallel" for parallel execution; any other string for sequential exeuction
 2. _option2_ - path to the file with arguments; you can find the required format of the file content furhter bellow; you can also use one of the four already existing test files from the "test_examples" directory
